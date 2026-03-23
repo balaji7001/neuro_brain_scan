@@ -1,0 +1,3 @@
+module.exports=[5106,a=>{a.n(a.i(30631))},26585,a=>{a.n(a.i(69785))},506,a=>{a.n(a.i(11733))},86411,a=>{a.n(a.i(21381))},54497,a=>{a.n(a.i(3902))},74783,a=>{"use strict";var b=a.i(4391);function c(){return(0,b.jsx)("div",{className:"space-y-6",children:(0,b.jsxs)("div",{className:"card",children:[(0,b.jsx)("h2",{className:"text-lg mb-2 font-semibold",children:"How it Works"}),(0,b.jsx)("p",{className:"text-gray-400",children:"EEG signals are captured, processed, and analyzed using AI models to determine emotional states and cognitive patterns."})]})})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=Myself_NeuroTester_frontend_c44562d9._.js.map

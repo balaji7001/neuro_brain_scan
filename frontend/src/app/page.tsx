@@ -1,109 +1,132 @@
+"use client";
+
+import { useState } from "react";
+import Papa from "papaparse";
 import EEGGraph from "../components/EEGGraph";
+import PersonBarChart from "../components/PersonBarChart";
 
-/* ===== TEMP LOADER TEST (REMOVE LATER) ===== */
-async function wait(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-    }
+/* ===== PAGE ===== */
+export default function Home() {
+    const [data, setData] = useState<any[]>([]);
+    const [personStats, setPersonStats] = useState<any[]>([]);
+    const [selectedPatient, setSelectedPatient] = useState<string>("");
+    const [state, setState] = useState("Idle");
 
-    export default async function Home() {
-    // 👇 REMOVE THIS AFTER TESTING LOADER
-    await wait(1500);
+    const handleFileUpload = (file: File) => {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: true,
+            complete: (results: any) => {
+
+                console.log("RAW:", results.data);
+
+                // ✅ FIXED: support capital column names
+                const rows = results.data.map((r: any, index: number) => ({
+                    index,
+                    person: r.person || r.Person || "User",
+                    alpha: Number(r.alpha ?? r.Alpha) || 0,
+                    beta: Number(r.beta ?? r.Beta) || 0,
+                    gamma: Number(r.gamma ?? r.Gamma) || 0,
+                    theta: Number(r.theta ?? r.Theta) || 0,
+                }));
+
+                console.log("PARSED:", rows);
+
+                setData(rows);
+
+                const persons = [...new Set(rows.map((r: any) => r.person))];
+
+                const stats = persons.map((p: string) => {
+                    const userData = rows.filter((r: any) => r.person === p);
+
+                    const avg = (key: string) =>
+                        (
+                            userData.reduce((s: number, d: any) => s + d[key], 0) /
+                            userData.length
+                        ).toFixed(2);
+
+                    return {
+                        person: p,
+                        alpha: Number(avg("alpha")),
+                        beta: Number(avg("beta")),
+                        gamma: Number(avg("gamma")),
+                        theta: Number(avg("theta")),
+                    };
+                });
+
+                setPersonStats(stats);
+
+                const first = persons[0] || "";
+                setSelectedPatient(first);
+
+                // ✅ safe brain state
+                if (rows.length > 0) {
+                    const last = rows[rows.length - 1];
+                    if (last.alpha > last.beta) setState("Relaxed");
+                    else if (last.beta > last.alpha) setState("Focused");
+                    else setState("Neutral");
+                } else {
+                    setState("No Data");
+                }
+            },
+        });
+    };
 
     return (
         <div className="p-6 space-y-6">
 
-        {/* ===== SYSTEM PROGRESS ===== */}
-        <div>
-            <div className="flex justify-between mb-2">
-            <h2 className="text-sm font-semibold text-[#3B6F8E]">
-                SYSTEM PROGRESS
-            </h2>
-            <span className="text-sm">70%</span>
-            </div>
-
-            <div className="h-2 bg-[#E6EDF2] rounded-full overflow-hidden">
-            <div
-                className="h-2 bg-[#56B79A]"
-                style={{ width: "70%" }}
-            />
-            </div>
-        </div>
-
-        {/* ===== MAIN GRID ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* ===== LEFT PANEL ===== */}
-            <div className="card col-span-1">
-            <h2 className="text-lg font-semibold mb-4 text-[#3B6F8E]">
-                Signal Config
-            </h2>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <input className="input" placeholder="CH1" />
-                <input className="input" placeholder="CH2" />
-                <input className="input" placeholder="CH3" />
-                <input className="input" placeholder="CH4" />
-            </div>
-
-            <button className="btn-secondary w-full mb-3">
-                ▶ Start Feed
-            </button>
-
-            <button className="btn-secondary w-full">
-                ⚡ Initiate Inference
-            </button>
-            </div>
-
-            {/* ===== RIGHT PANEL ===== */}
-            <div className="col-span-2 space-y-6">
-
-            {/* PROCESS CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                <div className="card hover:scale-105 transition">
-                <div className="text-2xl mb-2">⚡</div>
-                <h3 className="font-semibold text-[#3B6F8E]">
-                    Signal Preprocessing
-                </h3>
-                <p className="text-sm text-gray-500">
-                    Noise reduction & filtering
-                </p>
-                </div>
-
-                <div className="card hover:scale-105 transition">
-                <div className="text-2xl mb-2">📊</div>
-                <h3 className="font-semibold text-[#3B6F8E]">
-                    Feature Extraction
-                </h3>
-                <p className="text-sm text-gray-500">
-                    Wavelet transform analysis
-                </p>
-                </div>
-
-                <div className="card hover:scale-105 transition">
-                <div className="text-2xl mb-2">🧠</div>
-                <h3 className="font-semibold text-[#3B6F8E]">
-                    Hybrid Model Inference
-                </h3>
-                <p className="text-sm text-gray-500">
-                    BiLSTM & BiGRU integration
-                </p>
-                </div>
-
-            </div>
-
-            {/* EEG GRAPH */}
+            {/* Upload */}
             <div className="card">
                 <h2 className="text-lg mb-4 text-[#3B6F8E] font-semibold">
-                Dynamic Streams
+                    Upload EEG CSV
                 </h2>
 
-                <EEGGraph />
+                <label className="upload-box">
+                    <p className="text-sm text-gray-500">
+                        Click or drag CSV file
+                    </p>
+                    <input
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={(e) =>
+                            e.target.files && handleFileUpload(e.target.files[0])
+                        }
+                    />
+                </label>
             </div>
 
+            {/* Brain State */}
+            <div className="card">
+                <h2 className="text-lg text-[#3B6F8E]">Brain State</h2>
+                <p className="text-xl font-bold text-[#56B79A]">{state}</p>
             </div>
-        </div>
 
+            {/* EEG Graph (Users) */}
+            <div className="card">
+                <h2 className="text-lg mb-4 text-[#3B6F8E] font-semibold">
+                    EEG Signals (Users)
+                </h2>
+
+                <EEGGraph
+                    data={data}
+                    onSelect={(p: string) => setSelectedPatient(p)}
+                />
+            </div>
+
+            {/* Person Chart */}
+            <div className="card">
+                <h2 className="text-lg mb-4 text-[#3B6F8E] font-semibold">
+                    Selected Person Signals
+                </h2>
+
+                <PersonBarChart
+                    data={data.filter(
+                        (d: any) => d.person === selectedPatient
+                    )}
+                />
+            </div>
         </div>
     );
 }

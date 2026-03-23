@@ -1,35 +1,43 @@
 "use client";
 
-import { LineChart, Line, ResponsiveContainer } from "recharts";
-import { useEffect, useState } from "react";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    Legend,
+} from "recharts";
 
-export default function EEGGraph() {
-    const [data, setData] = useState<any[]>([]);
+export default function EEGGraph({ data, onSelect }: any) {
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-        setData(prev => [
-            ...prev.slice(-20),
-            { value: Math.random() * 100 }
-        ]);
-        }, 400);
-
-        return () => clearInterval(interval);
-    }, []);
+    const persons = [...new Set(data.map((d: any) => d.person))];
 
     return (
-        <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-            <Line
-                type="monotone"
-                dataKey="value"
-                stroke="#56B79A"
-                strokeWidth={3}
-                dot={false}
-            />
-            </LineChart>
-        </ResponsiveContainer>
+        <div className="w-full h-[320px]">
+            <ResponsiveContainer>
+                <LineChart>
+                    <XAxis dataKey="index" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+
+                    {persons.map((p: string, index: number) => (
+                        // @ts-ignore
+                        <Line
+                            key={p}
+                            data={data.filter((d: any) => d.person === p)}
+                            dataKey="alpha"
+                            name={p}
+                            stroke={`hsl(${index * 100}, 70%, 50%)`}
+                            strokeWidth={2}
+                            dot={false}
+                            onClick={() => onSelect(p)}
+                        />
+                    ))}
+                </LineChart>
+            </ResponsiveContainer>
         </div>
     );
 }
